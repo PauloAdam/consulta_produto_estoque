@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consulta de Produto</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonte moderna -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #0f172a, #020617);
+      color: #e5e7eb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #020617;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.6);
+      max-width: 420px;
+      width: 100%;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+      font-size: 15px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .card {
+      margin-top: 20px;
+      background: #020617;
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid #1e293b;
+      display: none;
+    }
+
+    .img-box {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      background: #020617;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: auto;
+    }
+
+    .nome {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .estoque {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .estoque.ok {
+      background: rgba(34,197,94,.15);
+      color: #22c55e;
+    }
+
+    .estoque.zero {
+      background: rgba(239,68,68,.15);
+      color: #ef4444;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      display: none;
+      opacity: .8;
+    }
+
+    .erro {
+      margin-top: 20px;
+      color: #ef4444;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>Consulta de Produto</h1>
+
+    <div class="input-group">
+      <input id="gtin" placeholder="Digite o GTIN / EAN" />
+      <button onclick="buscar()">Buscar</button>
+    </div>
+
+    <div class="loading" id="loading">🔄 Buscando produto...</div>
+    <div class="erro" id="erro"></div>
+
+    <div class="card" id="card">
+      <div class="img-box">
+        <img id="imagem" />
+      </div>
+      <div class="nome" id="nome"></div>
+      <div class="estoque" id="estoque"></div>
+    </div>
+  </div>
+
+  <script>
+    async function buscar() {
+      const gtin = document.getElementById('gtin').value.trim()
+      const card = document.getElementById('card')
+      const loading = document.getElementById('loading')
+      const erro = document.getElementById('erro')
+
+      card.style.display = 'none'
+      erro.style.display = 'none'
+
+      if (!gtin) return
+
+      loading.style.display = 'block'
+
+      try {
+        const res = await fetch(`/produto/${gtin}`)
+        const data = await res.json()
+
+        if (!res.ok) throw new Error(data.erro || 'Erro')
+
+        // 🔥 FORÇA IMAGEM ALTA QUALIDADE
+        let img = data.imagem || ''
+        img = img.replace('/miniatura', '')
+        img = img.replace('miniatura', '')
+        img += img.includes('?') ? '&w=1000' : '?w=1000'
+
+        document.getElementById('imagem').src = img
+        document.getElementById('nome').innerText = data.nome
+
+        const estoqueEl = document.getElementById('estoque')
+        estoqueEl.innerText = `Estoque: ${data.estoque}`
+
+        estoqueEl.className =
+          'estoque ' + (data.estoque > 0 ? 'ok' : 'zero')
+
+        card.style.display = 'block'
+      } catch (e) {
+        erro.innerText = e.message
+        erro.style.display = 'block'
+      } finally {
+        loading.style.display = 'none'
+      }
+    }
+  </script>
+
+</body>
+</html>
