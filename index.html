@@ -4,15 +4,15 @@
   <meta charset="UTF-8" />
   <title>Consulta de Produto</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-  <!-- Fonte moderna -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     * {
       box-sizing: border-box;
       font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -23,59 +23,58 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 14px;
     }
 
     .container {
       background: #020617;
       border-radius: 18px;
       box-shadow: 0 20px 50px rgba(0,0,0,.6);
-      max-width: 420px;
       width: 100%;
-      padding: 24px;
+      max-width: 420px;
+      padding: 20px;
     }
 
     h1 {
       margin: 0 0 16px;
-      font-size: 22px;
+      font-size: 20px;
       text-align: center;
     }
 
     .input-group {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
     input {
-      flex: 1;
-      padding: 14px;
-      border-radius: 12px;
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
       border: none;
       outline: none;
-      font-size: 15px;
+      font-size: 16px;
+      text-align: center;
     }
 
     button {
+      width: 100%;
       background: #2563eb;
       color: white;
       border: none;
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-weight: 600;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
       cursor: pointer;
-      transition: background .2s;
-    }
-
-    button:hover {
-      background: #1d4ed8;
     }
 
     .card {
-      margin-top: 20px;
+      margin-top: 16px;
       background: #020617;
       border-radius: 16px;
-      padding: 18px;
+      padding: 16px;
       border: 1px solid #1e293b;
       display: none;
     }
@@ -84,33 +83,29 @@
       width: 100%;
       aspect-ratio: 1 / 1;
       border-radius: 14px;
-      background: #020617;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: hidden;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .img-box img {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      image-rendering: auto;
     }
 
     .nome {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      text-align: center;
     }
 
     .estoque {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       padding: 10px;
-      border-radius: 10px;
-      display: inline-block;
+      border-radius: 12px;
+      text-align: center;
     }
 
     .estoque.ok {
@@ -123,88 +118,117 @@
       color: #ef4444;
     }
 
-    .loading {
+    .loading, .erro {
+      margin-top: 16px;
       text-align: center;
-      margin-top: 20px;
       display: none;
-      opacity: .8;
     }
 
     .erro {
-      margin-top: 20px;
       color: #ef4444;
-      text-align: center;
-      display: none;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
-    <h1>Consulta de Produto</h1>
+<div class="container">
+  <h1>Consulta de Produto</h1>
 
-    <div class="input-group">
-      <input id="gtin" placeholder="Digite o GTIN / EAN" />
-      <button onclick="buscar()">Buscar</button>
-    </div>
-
-    <div class="loading" id="loading">🔄 Buscando produto...</div>
-    <div class="erro" id="erro"></div>
-
-    <div class="card" id="card">
-      <div class="img-box">
-        <img id="imagem" />
-      </div>
-      <div class="nome" id="nome"></div>
-      <div class="estoque" id="estoque"></div>
-    </div>
+  <div class="input-group">
+    <input
+      id="gtin"
+      placeholder="GTIN / EAN / SKU"
+      autocomplete="off"
+    />
+    <button onclick="buscar()">Buscar</button>
   </div>
 
-  <script>
-    async function buscar() {
-      const gtin = document.getElementById('gtin').value.trim()
-      const card = document.getElementById('card')
-      const loading = document.getElementById('loading')
-      const erro = document.getElementById('erro')
+  <div class="loading" id="loading">🔄 Buscando produto...</div>
+  <div class="erro" id="erro"></div>
 
-      card.style.display = 'none'
-      erro.style.display = 'none'
+  <div class="card" id="card">
+    <div class="img-box">
+      <img id="imagem" />
+    </div>
+    <div class="nome" id="nome"></div>
+    <div class="estoque" id="estoque"></div>
+  </div>
+</div>
 
-      if (!gtin) return
+<script>
+  const input = document.getElementById('gtin')
 
-      loading.style.display = 'block'
+  window.onload = () => input.focus()
 
-      try {
-        const res = await fetch(`/produto/${gtin}`)
-        const data = await res.json()
+  // ENTER do leitor
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
 
-        if (!res.ok) throw new Error(data.erro || 'Erro')
+      // fecha teclado
+      input.blur()
 
-        // 🔥 FORÇA IMAGEM ALTA QUALIDADE
-        let img = data.imagem || ''
-        img = img.replace('/miniatura', '')
-        img = img.replace('miniatura', '')
-        img += img.includes('?') ? '&w=1000' : '?w=1000'
-
-        document.getElementById('imagem').src = img
-        document.getElementById('nome').innerText = data.nome
-
-        const estoqueEl = document.getElementById('estoque')
-        estoqueEl.innerText = `Estoque: ${data.estoque}`
-
-        estoqueEl.className =
-          'estoque ' + (data.estoque > 0 ? 'ok' : 'zero')
-
-        card.style.display = 'block'
-      } catch (e) {
-        erro.innerText = e.message
-        erro.style.display = 'block'
-      } finally {
-        loading.style.display = 'none'
-      }
+      buscar()
     }
-  </script>
+  })
+
+  async function buscar() {
+    const codigo = input.value.trim()
+    const card = document.getElementById('card')
+    const loading = document.getElementById('loading')
+    const erro = document.getElementById('erro')
+
+    card.style.display = 'none'
+    erro.style.display = 'none'
+
+    if (!codigo) return
+
+    loading.style.display = 'block'
+
+    try {
+      const res = await fetch(`/produto/${codigo}`)
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.erro || 'Erro ao buscar produto')
+
+      let img = data.imagem || ''
+      img = img.replace('miniatura', '')
+      img += img.includes('?') ? '&w=1000' : '?w=1000'
+
+      document.getElementById('imagem').src = img
+      document.getElementById('nome').innerText = data.nome
+
+      const estoqueEl = document.getElementById('estoque')
+      estoqueEl.innerText = `Estoque: ${data.estoque}`
+      estoqueEl.className =
+        'estoque ' + (data.estoque > 0 ? 'ok' : 'zero')
+
+      card.style.display = 'block'
+    } catch (e) {
+      erro.innerText = e.message
+      erro.style.display = 'block'
+    } finally {
+      loading.style.display = 'none'
+
+      // limpa campo
+      input.value = ''
+
+      // 🔒 impede teclado
+      input.setAttribute('readonly', 'readonly')
+
+      // 🎯 cursor volta SEM teclado
+      setTimeout(() => {
+        input.focus()
+      }, 400)
+
+      // 🔓 libera para próximo bip
+      setTimeout(() => {
+        input.removeAttribute('readonly')
+      }, 800)
+    }
+  }
+</script>
 
 </body>
 </html>
